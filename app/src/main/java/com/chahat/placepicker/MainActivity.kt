@@ -1,6 +1,8 @@
 package com.chahat.placepicker
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -19,10 +21,13 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceLikelihood
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
 import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.widget.Autocomplete
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private val REQUEST_LOCATION_PERMISSION = 1
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1
+    private val AUTOCOMPLETE_REQUEST_CODE = 2
 
     private lateinit var placesClient: PlacesClient
     private lateinit var googleMap: GoogleMap
@@ -52,7 +57,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun findCurrentPlace() {
-        val placeFields = listOf(Place.Field.NAME)
+        val placeFields = listOf(Place.Field.NAME, Place.Field.LAT_LNG, Place.Field.ADDRESS)
         val request = FindCurrentPlaceRequest.builder(placeFields).build()
 
         if (checkLocationPermission()) {
@@ -100,15 +105,39 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            REQUEST_LOCATION_PERMISSION
+            LOCATION_PERMISSION_REQUEST_CODE
         )
+    }
+
+    private fun openAutoCompleteActivity() {
+        val fields = listOf(
+            Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+        val intent = Autocomplete
+            .IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields)
+            .build(this)
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                val place = Autocomplete.getPlaceFromIntent(data)
+            } else {
+                Toast.makeText(
+                    this,
+                    "Something went wrong",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<out String>,
                                             grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
             } else {
