@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">PlacePicker</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
 </resources>

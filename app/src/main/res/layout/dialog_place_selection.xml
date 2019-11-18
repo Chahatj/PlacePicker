@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp" >
+
+    <TextView
+        android:id="@+id/text_view_place_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Sams Grande"
+        android:textColor="@color/colorBlack" />
+
+    <TextView
+        android:id="@+id/text_view_place_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="72, 6th cross road, near HR Residency, Jakkasandra, HSR, Teachers colony" />
+
+    <fragment
+        android:id="@+id/fragment_map"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/text_view_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel"
+            android:textAllCaps="true"
+            android:textSize="16sp"
+            android:textColor="@color/colorBlack"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/text_view_ok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ok"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/colorBlue" />
+
+    </LinearLayout>
+
+</LinearLayout>

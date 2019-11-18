@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var nearbyPlaceAdapter: NearbyPlaceAdapter
 
     private var currentMarker : Marker? = null
+    private var placeData : PlaceData? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +63,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             openAutoCompleteActivity()
         }
         text_view_select_location.setOnClickListener {
-
+            if (this.currentMarker == null) {
+                Toast.makeText(this,
+                    "Please choose location", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
         }
         nearbyPlaceAdapter = NearbyPlaceAdapter(
             mutableListOf(),
@@ -137,7 +142,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             if (it.isSuccessful) {
                 val lastKnownLocation = it.result
                 val latLng = LatLng(lastKnownLocation!!.latitude, lastKnownLocation.longitude)
-                this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                this.googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                addMarkerOnMap(latLng)
             }
         }
     }
@@ -171,7 +177,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 val place = Autocomplete.getPlaceFromIntent(data)
-                text_view_search.text = place.address
                 addMarkerOnMap(place.latLng!!)
             } else {
                 Toast.makeText(
