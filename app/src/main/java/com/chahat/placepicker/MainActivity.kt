@@ -19,6 +19,8 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
@@ -36,6 +38,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private lateinit var mapView: View
     private lateinit var nearbyPlaceAdapter: NearbyPlaceAdapter
+
+    private var currentMarker : Marker? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +61,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         text_view_search.setOnClickListener {
             openAutoCompleteActivity()
         }
-        nearbyPlaceAdapter = NearbyPlaceAdapter(mutableListOf())
+        text_view_select_location.setOnClickListener {
+
+        }
+        nearbyPlaceAdapter = NearbyPlaceAdapter(
+            mutableListOf(),
+            object : NearbyPlaceAdapter.NearbyPlaceClickListener {
+                override fun onClick(place: Place) {
+                    addMarkerOnMap(place.latLng!!)
+                }
+            }
+        )
         recycler_view_nearby_place.layoutManager = LinearLayoutManager(
             this, RecyclerView.VERTICAL, false)
         recycler_view_nearby_place.addItemDecoration(ItemOffsetDecoration(40))
@@ -68,17 +82,29 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         this.googleMap = googleMap!!
         this.googleMap.isMyLocationEnabled = true
         this.googleMap.uiSettings.isMyLocationButtonEnabled = true
-        val locationButton= (mapView.findViewById<View>(Integer.parseInt("1")).parent as View)
+        val locationButton = (mapView.findViewById<View>(Integer.parseInt("1")).parent as View)
             .findViewById<View>(Integer.parseInt("2"))
-        val rlp=locationButton.layoutParams as (RelativeLayout.LayoutParams)
-        // position on right bottom
+        val rlp = locationButton.layoutParams as (RelativeLayout.LayoutParams)
         rlp.addRule(RelativeLayout.ALIGN_PARENT_TOP,0)
         rlp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM,RelativeLayout.TRUE)
-        rlp.setMargins(0,0,30,30);
+        rlp.setMargins(0,0,30,30)
+
+        this.googleMap.setOnMapClickListener {
+            addMarkerOnMap(it)
+        }
+
         if (!checkLocationPermission()) {
             requestLocationPermission()
         }
         getDeviceLocation()
+    }
+
+    private fun addMarkerOnMap(latLng : LatLng) {
+        val markerOptions = MarkerOptions()
+        markerOptions.position(latLng)
+        this.googleMap.clear()
+        this.googleMap.animateCamera(CameraUpdateFactory.newLatLng(latLng))
+        this.currentMarker = this.googleMap.addMarker(markerOptions)
     }
 
     private fun findCurrentPlace() {
@@ -146,6 +172,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 val place = Autocomplete.getPlaceFromIntent(data)
                 text_view_search.text = place.address
+                addMarkerOnMap(place.latLng!!)
             } else {
                 Toast.makeText(
                     this,

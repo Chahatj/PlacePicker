@@ -5,10 +5,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceLikelihood
 import kotlinx.android.synthetic.main.place.view.*
 
-class NearbyPlaceAdapter(private val nearbyPlaces: MutableList<PlaceLikelihood>)
+class NearbyPlaceAdapter(private val nearbyPlaces: MutableList<PlaceLikelihood>,
+                         private val clickListener: NearbyPlaceClickListener)
     : RecyclerView.Adapter<NearbyPlaceAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,5 +37,16 @@ class NearbyPlaceAdapter(private val nearbyPlaces: MutableList<PlaceLikelihood>)
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textViewPlaceName : TextView = view.text_view_place_name
         val textViewPlaceAddress : TextView = view.text_view_place_address
+
+        init {
+            view.setOnClickListener {
+                val place = nearbyPlaces[adapterPosition].place
+                clickListener.onClick(place)
+            }
+        }
+    }
+
+    interface NearbyPlaceClickListener {
+        fun onClick(place: Place)
     }
 }
