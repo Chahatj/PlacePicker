@@ -3,9 +3,12 @@ package com.chahat.placepicker
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Looper
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.Toast
@@ -13,7 +16,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -33,14 +37,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
     private val AUTOCOMPLETE_REQUEST_CODE = 2
+    private val LOCATION_SETTING_REQUEST_CODE = 3
 
     private lateinit var placesClient: PlacesClient
     private lateinit var googleMap: GoogleMap
     private lateinit var mapView: View
     private lateinit var nearbyPlaceAdapter: NearbyPlaceAdapter
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     private var currentMarker : Marker? = null
     private var placeData : PlaceData? = null
+
+    private val locationRequest = LocationRequest.create().apply {
+        interval = 1000
+        fastestInterval = 5000
+        priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +65,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         Places.initialize(applicationContext, "AIzaSyDkUPRCzN0sAjdoZXDLvUNAW3RBFHAODOw")
         placesClient = Places.createClient(this)
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         initUI()
         findCurrentPlace()
@@ -136,16 +149,49 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     fun getDeviceLocation() {
-        val fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         val locationResult = fusedLocationProviderClient.lastLocation
         locationResult.addOnCompleteListener(this) {
             if (it.isSuccessful) {
                 val lastKnownLocation = it.result
                 val latLng = LatLng(lastKnownLocation!!.latitude, lastKnownLocation.longitude)
-                this.googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
                 addMarkerOnMap(latLng)
             }
         }
+
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val client = LocationServices.getSettingsClient(this)
+        val task = client.checkLocationSettings(builder.build())
+        task.addOnSuccessListener {
+            requestLocationUpdates(locationRequest)
+        }
+        task.addOnFailureListener {
+            if (it is ResolvableApiException) {
+                try {
+                    it.startResolutionForResult(this, LOCATION_SETTING_REQUEST_CODE)
+                } catch (sendEx : IntentSender.SendIntentException) {
+                    sendEx.printStackTrace()
+                }
+            }
+        }
+    }
+
+    private fun requestLocationUpdates(locationRequest: LocationRequest) {
+        fusedLocationProviderClient.requestLocationUpdates(
+            locationRequest,
+            object : LocationCallback() {
+                override fun onLocationResult(p0: LocationResult?) {
+                    if (p0 == null) return
+                    for ((i, location : Location) in p0.locations.withIndex()) {
+                        addMarkerOnMap(LatLng(location.latitude, location.longitude))
+                        if (i == 2) {
+                            fusedLocationProviderClient.removeLocationUpdates(this)
+                        }
+                    }
+                }
+            },
+            Looper.getMainLooper()
+        )
     }
 
     private fun checkLocationPermission() : Boolean {
@@ -184,6 +230,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     "Something went wrong",
                     Toast.LENGTH_SHORT
                 ).show()
+            }
+        } else if (requestCode == LOCATION_SETTING_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                requestLocationUpdates(locationRequest)
             }
         }
     }
