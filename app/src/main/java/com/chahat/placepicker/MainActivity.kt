@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,6 +25,7 @@ import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.widget.Autocomplete
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -31,6 +34,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var placesClient: PlacesClient
     private lateinit var googleMap: GoogleMap
+    private lateinit var mapView: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,17 +43,32 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment : SupportMapFragment = supportFragmentManager.findFragmentById(R.id.map)
                 as SupportMapFragment
         mapFragment.getMapAsync(this)
+        mapView = mapFragment.view!!
 
         Places.initialize(applicationContext, "AIzaSyDkUPRCzN0sAjdoZXDLvUNAW3RBFHAODOw")
         placesClient = Places.createClient(this)
+
+        initUI()
         findCurrentPlace()
+    }
+
+    private fun initUI() {
+        text_view_search.setOnClickListener {
+            openAutoCompleteActivity()
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap?) {
         this.googleMap = googleMap!!
         this.googleMap.isMyLocationEnabled = true
         this.googleMap.uiSettings.isMyLocationButtonEnabled = true
-
+        val locationButton= (mapView.findViewById<View>(Integer.parseInt("1")).parent as View)
+            .findViewById<View>(Integer.parseInt("2"))
+        val rlp=locationButton.layoutParams as (RelativeLayout.LayoutParams)
+        // position on right bottom
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_TOP,0)
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM,RelativeLayout.TRUE)
+        rlp.setMargins(0,0,30,30);
         if (!checkLocationPermission()) {
             requestLocationPermission()
         }
@@ -89,7 +108,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             if (it.isSuccessful) {
                 val lastKnownLocation = it.result
                 val latLng = LatLng(lastKnownLocation!!.latitude, lastKnownLocation.longitude)
-                this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 0f))
+                this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
             }
         }
     }
@@ -123,6 +142,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 val place = Autocomplete.getPlaceFromIntent(data)
+                text_view_search.text = place.address
             } else {
                 Toast.makeText(
                     this,
