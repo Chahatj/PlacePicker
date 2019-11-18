@@ -12,6 +12,8 @@ import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var googleMap: GoogleMap
     private lateinit var mapView: View
+    private lateinit var nearbyPlaceAdapter: NearbyPlaceAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +59,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         text_view_search.setOnClickListener {
             openAutoCompleteActivity()
         }
+        nearbyPlaceAdapter = NearbyPlaceAdapter(mutableListOf())
+        recycler_view_nearby_place.layoutManager = LinearLayoutManager(
+            this, RecyclerView.VERTICAL, false)
+        recycler_view_nearby_place.addItemDecoration(ItemOffsetDecoration(40))
+        recycler_view_nearby_place.adapter = nearbyPlaceAdapter
     }
 
     override fun onMapReady(googleMap: GoogleMap?) {
@@ -82,12 +90,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         if (checkLocationPermission()) {
             val placeResponse = placesClient.findCurrentPlace(request)
             placeResponse.addOnCompleteListener {
-                if (it.isSuccessful) {
-                    val response = it.result
-                    for (placeLikelihood : PlaceLikelihood in response!!.placeLikelihoods) {
-                        val placeName = placeLikelihood.place.name
-                        Log.i("Place: ", placeName)
-                    }
+                val response = it.result
+                if (it.isSuccessful && response != null) {
+                    nearbyPlaceAdapter.setNearbyPlaces(response.placeLikelihoods)
                 } else {
                     Toast.makeText(
                         this,
