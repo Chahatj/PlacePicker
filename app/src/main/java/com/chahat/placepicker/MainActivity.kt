@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapView: View
     private lateinit var nearbyPlaceAdapter: NearbyPlaceAdapter
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var apiService : ApiInterface
 
     private var currentMarker : Marker? = null
     private var placeData : PlaceData? = null
@@ -66,6 +67,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         Places.initialize(applicationContext, "AIzaSyDkUPRCzN0sAjdoZXDLvUNAW3RBFHAODOw")
         placesClient = Places.createClient(this)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+        apiService = ApiClient.getClient().create(ApiInterface::class.java)
 
         initUI()
         findCurrentPlace()
